@@ -104,7 +104,9 @@ inventory-order-management/
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 20+ for the server; the Angular 22 CLI itself requires Node **22.22.3+/24.15.0+/26.0.0+**
+  for the client (the server's Dockerfile uses `node:20-alpine`, the client's uses `node:22-alpine`
+  for exactly this reason)
 - Angular CLI (`npm install -g @angular/cli`, or use `npx ng`)
 - Docker Desktop (for MongoDB locally, or the full stack via Compose)
 

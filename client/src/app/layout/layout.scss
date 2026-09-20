@@ -8,8 +8,10 @@
   margin-right: 24px;
 }
 
+// Angular Material's default M3 theme renders mat-toolbar[color="primary"] with a light
+// background, not a dark one - don't force white text or it becomes invisible against it.
 .nav-links a {
-  color: white;
+  color: inherit;
 }
 
 .nav-links a.active {

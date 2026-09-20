@@ -1,5 +1,7 @@
 # --- Build stage ---
-FROM node:20-alpine AS build
+# Angular 22's CLI requires Node >=22.22.3/24.15.0/26.0.0 - node:20 (used by the other two
+# services' Dockerfiles) is too old and fails the build with an engine-version error.
+FROM node:22-alpine AS build
 WORKDIR /build
 
 COPY package*.json ./
