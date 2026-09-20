@@ -1,0 +1,15 @@
+<mat-toolbar color="primary" class="toolbar">
+  <span class="brand">Inventory</span>
+  <nav class="nav-links">
+    <a mat-button routerLink="/suppliers" routerLinkActive="active">Suppliers</a>
+    <a mat-button routerLink="/products" routerLinkActive="active">Products</a>
+    <a mat-button routerLink="/purchase-orders" routerLinkActive="active">Purchase Orders</a>
+  </nav>
+  <span class="spacer"></span>
+  <span class="user-name">{{ user()?.name }}</span>
+  <button mat-stroked-button color="accent" (click)="logout()">Log out</button>
+</mat-toolbar>
+
+<main class="content">
+  <router-outlet></router-outlet>
+</main>

@@ -1,0 +1,42 @@
+<div class="auth-page">
+  <mat-card class="auth-card">
+    <h1>Create your account</h1>
+    <p class="subtitle">Start managing suppliers, products, and orders</p>
+
+    <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" />
+        @if (form.controls.name.invalid && form.controls.name.touched) {
+          <mat-error>Name is required</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Email</mat-label>
+        <input matInput type="email" formControlName="email" />
+        @if (form.controls.email.invalid && form.controls.email.touched) {
+          <mat-error>Enter a valid email</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Password</mat-label>
+        <input matInput type="password" formControlName="password" />
+        @if (form.controls.password.invalid && form.controls.password.touched) {
+          <mat-error>At least 8 characters</mat-error>
+        }
+      </mat-form-field>
+
+      @if (serverError()) {
+        <p class="server-error">{{ serverError() }}</p>
+      }
+
+      <button mat-flat-button color="primary" type="submit" class="full-width" [disabled]="submitting()">
+        {{ submitting() ? 'Creating account...' : 'Create account' }}
+      </button>
+    </form>
+
+    <p class="switch-link">Already have an account? <a routerLink="/login">Log in</a></p>
+  </mat-card>
+</div>

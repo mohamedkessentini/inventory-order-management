@@ -1,0 +1,33 @@
+.toolbar {
+  display: flex;
+  gap: 8px;
+}
+
+.brand {
+  font-weight: 600;
+  margin-right: 24px;
+}
+
+.nav-links a {
+  color: white;
+}
+
+.nav-links a.active {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.user-name {
+  margin-right: 12px;
+  font-size: 0.9rem;
+}
+
+.content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
