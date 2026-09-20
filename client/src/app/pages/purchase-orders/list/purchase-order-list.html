@@ -1,0 +1,88 @@
+<h1>Purchase Orders</h1>
+
+<mat-card class="form-card">
+  <h2>New purchase order</h2>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+    <mat-form-field appearance="outline">
+      <mat-label>Supplier</mat-label>
+      <mat-select formControlName="supplierId">
+        @for (s of suppliers(); track s._id) {
+          <mat-option [value]="s._id">{{ s.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <div formArrayName="lines">
+      @for (line of lines.controls; track $index) {
+        <div [formGroupName]="$index" class="line-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Product</mat-label>
+            <mat-select formControlName="productId">
+              @for (p of productsForSupplier(); track p._id) {
+                <mat-option [value]="p._id">{{ p.name }} ({{ p.sku }})</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="qty-field">
+            <mat-label>Quantity</mat-label>
+            <input matInput type="number" formControlName="quantityOrdered" />
+          </mat-form-field>
+          <button mat-icon-button type="button" (click)="removeLine($index)" [disabled]="lines.length === 1">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+
+    <button mat-stroked-button type="button" (click)="addLine()">+ Add line</button>
+
+    @if (formError()) {
+      <p class="error">{{ formError() }}</p>
+    }
+
+    <div class="submit-row">
+      <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">Create purchase order</button>
+    </div>
+  </form>
+</mat-card>
+
+@if (loading()) {
+  <p>Loading...</p>
+} @else if (orders().length === 0) {
+  <p>No purchase orders yet.</p>
+} @else {
+  <table mat-table [dataSource]="orders()" class="mat-elevation-z1 full-width">
+    <ng-container matColumnDef="orderNumber">
+      <th mat-header-cell *matHeaderCellDef>#</th>
+      <td mat-cell *matCellDef="let o">{{ o.orderNumber }}</td>
+    </ng-container>
+    <ng-container matColumnDef="supplier">
+      <th mat-header-cell *matHeaderCellDef>Supplier</th>
+      <td mat-cell *matCellDef="let o">{{ supplierName(o.supplier) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let o">{{ o.status }}</td>
+    </ng-container>
+    <ng-container matColumnDef="totalCost">
+      <th mat-header-cell *matHeaderCellDef>Total</th>
+      <td mat-cell *matCellDef="let o">{{ o.totalCost }}</td>
+    </ng-container>
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let o">
+        <a mat-button [routerLink]="['/purchase-orders', o._id]">View</a>
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  <mat-paginator
+    [length]="totalElements()"
+    [pageSize]="limit()"
+    [pageIndex]="page() - 1"
+    [pageSizeOptions]="[10, 20, 50]"
+    (page)="onPageChange($event)"
+  ></mat-paginator>
+}

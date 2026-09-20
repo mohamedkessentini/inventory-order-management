@@ -1,0 +1,44 @@
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: rgba(0, 0, 0, 0.6);
+  text-decoration: none;
+}
+
+.detail-card {
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.subtitle {
+  color: rgba(0, 0, 0, 0.6);
+  margin: 4px 0 0;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.total {
+  text-align: right;
+  font-weight: 600;
+  margin-top: 12px;
+}
+
+.error {
+  color: #b3261e;
+  font-size: 0.85rem;
+  margin-top: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
