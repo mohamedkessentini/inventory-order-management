@@ -20,3 +20,7 @@ junit.xml
 
 # Angular
 .angular/
+
+# Local-only notes
+CV_DESCRIPTION.md
+INTERVIEW_PREPARATION.md

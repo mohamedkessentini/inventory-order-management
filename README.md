@@ -1,250 +1,129 @@
 # Inventory & Order Management System
 
-A full-stack MEAN application for managing suppliers, products, and purchase orders in a small
-warehouse/e-commerce operation. Built with MongoDB, Express, Angular, and Node.js, all in
-TypeScript.
+Full-stack MEAN app for managing suppliers, products and purchase orders — basically a small
+warehouse/stock system. MongoDB, Express, Angular, Node, all TypeScript.
 
-This is a personal learning/portfolio project, not a production warehouse management system, but
-the core stock/ordering logic (atomic stock updates, order status workflow) is real and tested.
+Third project in a small portfolio I'm building (Java/Spring, MERN, and this one). Not trying to be
+a real warehouse system, but the stock/ordering logic is real, not just UI for show.
 
-## Overview
+## How it works
 
-1. Register/log in as staff.
-2. Add **suppliers** and, per supplier, the **products** they provide (with a cost and a reorder
-   threshold).
-3. Create a **purchase order** (DRAFT) for a supplier, listing which products and how many units to
-   buy — unit costs are snapshotted from the product at creation time.
-4. Mark the order **ORDERED** once it's actually placed with the supplier.
-5. **Receive** the order once it arrives: each product's stock is incremented by the ordered
-   quantity, atomically, and the order becomes RECEIVED — it can never be received twice.
-6. The product list can be filtered to show only items at or below their reorder threshold.
+1. Register/log in.
+2. Add suppliers, and per supplier the products they provide (cost + reorder threshold).
+3. Create a purchase order (DRAFT) for a supplier — pick products and quantities. Unit costs get
+   snapshotted from the product at creation time so a later price change doesn't retroactively mess
+   with an existing order.
+4. Mark it ORDERED once you've actually placed it with the supplier.
+5. Receive it when it arrives — stock gets incremented atomically and the order becomes RECEIVED.
+   Can't be received twice, even if you double-click the button or two requests race.
+6. Product list has a low-stock filter (items at or below their reorder threshold).
 
 ## Features
 
-- JWT authentication (register/login) guarding every non-auth route
-- CRUD for suppliers and products; full purchase-order lifecycle (DRAFT → ORDERED → RECEIVED /
-  CANCELLED)
-- Real business logic: unit-cost snapshotting on order creation, atomic stock increment on receipt
-  (an order can never be received twice, even under concurrent requests), a supplier/product
-  consistency rule (an order line's product must actually belong to the order's supplier)
-- Low-stock filtering (`quantityInStock <= reorderThreshold`) computed in MongoDB, not in app code
-- Manual stock adjustment endpoint (e.g. after a physical count), with a reason logged
-- Search (suppliers/products), filtering (by supplier/status), and pagination on every list endpoint
-- Zod request validation with consistent field-level error responses
-- Centralized error handling (404/400/401/409/422)
-- Angular UI (Angular Material) with reactive forms, a dynamic `FormArray` for purchase-order lines,
-  and RxJS-based data loading through injectable services
-- Unit tests (business logic, in-memory MongoDB) + integration tests (full HTTP flow, Supertest)
-- Docker, Docker Compose (Mongo + API + nginx-served frontend), GitLab CI/CD
+- JWT auth guarding everything except login/register
+- CRUD for suppliers/products, full purchase-order lifecycle (DRAFT → ORDERED → RECEIVED/CANCELLED)
+- The actual business rules: unit-cost snapshotting, atomic stock updates on receipt, a
+  supplier/product consistency check (you can't order a product from a supplier that doesn't
+  actually supply it)
+- Low-stock filtering computed in MongoDB, not pulled into JS and filtered there
+- Manual stock adjustment endpoint for physical counts
+- Search/filter/pagination everywhere
+- Zod validation, centralized error handling
+- Angular Material UI with reactive forms, a dynamic FormArray for order line items
+- Unit + integration tests
+- Docker Compose, GitLab CI
 
 ## Architecture
 
 ```
-Angular (services + RxJS)  →  Express REST API  →  Mongoose  →  MongoDB
-        ↑                          ↑
-  Reactive Forms            Controller → Service → Model
-  HTTP interceptor (JWT)    (same layering as the other two projects)
+Angular (services + RxJS)  →  Express API  →  Mongoose  →  MongoDB
 ```
 
-- **`server/src/models`** — Mongoose schemas (User, Supplier, Product, PurchaseOrder).
-- **`server/src/services`** — business logic; the only layer that touches models directly.
-- **`server/src/controllers`** — thin HTTP adapters.
-- **`server/src/middleware`** — JWT auth, Zod validation, centralized error handler.
-- **`client/src/app/core/services`** — one injectable Angular service per resource, each returning
-  RxJS `Observable`s from `HttpClient`.
-- **`client/src/app/core/interceptors/auth.interceptor.ts`** — attaches the JWT to every outgoing
-  request and logs the user out on a 401.
-- **`client/src/app/pages`** — one standalone, lazy-loaded component per resource.
+Same backend layering as my other two projects — controller → service → model, services own the
+Mongoose calls. On the Angular side, `core/services` are injectable services wrapping HttpClient,
+`core/interceptors` handles attaching the JWT and logging out on 401, `pages` is one standalone
+lazy-loaded component per resource.
 
-## Tech Stack
+## Stack
 
-| Layer      | Technology                                                              |
-|------------|----------------------------------------------------------------------------|
-| Frontend   | Angular 22 (standalone components, signals), TypeScript, Angular Material, RxJS, Reactive Forms |
-| Backend    | Node.js, Express, TypeScript, Mongoose, JWT, bcrypt, Zod                 |
-| Database   | MongoDB 7                                                                  |
-| Testing    | Jest, Supertest, mongodb-memory-server                                    |
-| Containers | Docker, Docker Compose                                                     |
-| CI/CD      | GitLab CI/CD                                                                |
+Angular 22 (standalone components, signals), TypeScript, Angular Material, RxJS, Reactive Forms.
+Node/Express/TypeScript, Mongoose, JWT, bcrypt, Zod. MongoDB 7. Jest + Supertest +
+mongodb-memory-server. Docker/Compose, GitLab CI.
 
-## Project Structure
+## Running it
 
-```
-inventory-order-management/
-├── server/
-│   ├── src/
-│   │   ├── config/        # env, MongoDB connection
-│   │   ├── models/        # Mongoose schemas
-│   │   ├── services/      # business logic
-│   │   ├── controllers/   # HTTP handlers
-│   │   ├── routes/        # Express routers
-│   │   ├── middleware/    # auth, validation, error handling
-│   │   ├── validators/    # Zod schemas
-│   │   └── utils/         # ApiError, pagination, logger
-│   ├── tests/
-│   │   ├── unit/          # business logic tests (in-memory MongoDB)
-│   │   └── integration/   # full HTTP flow tests (Supertest)
-│   └── Dockerfile
-├── client/
-│   ├── src/app/
-│   │   ├── core/
-│   │   │   ├── models/        # shared TypeScript interfaces
-│   │   │   ├── services/      # HttpClient wrappers per resource
-│   │   │   ├── guards/        # authGuard (route protection)
-│   │   │   └── interceptors/  # JWT attachment + 401 handling
-│   │   ├── layout/         # authenticated app shell (toolbar + router-outlet)
-│   │   └── pages/          # login, register, suppliers, products, purchase-orders
-│   ├── nginx.conf
-│   └── Dockerfile
-├── docker-compose.yml
-├── .gitlab-ci.yml
-├── CV_DESCRIPTION.md
-└── INTERVIEW_PREPARATION.md
-```
-
-## Prerequisites
-
-- Node.js 20+ for the server; the Angular 22 CLI itself requires Node **22.22.3+/24.15.0+/26.0.0+**
-  for the client (the server's Dockerfile uses `node:20-alpine`, the client's uses `node:22-alpine`
-  for exactly this reason)
-- Angular CLI (`npm install -g @angular/cli`, or use `npx ng`)
-- Docker Desktop (for MongoDB locally, or the full stack via Compose)
-
-## Installation
+Node 20+ works fine for the server, but the Angular 22 CLI needs Node 22.22.3+ (or 24.15+, or 26+)
+to run at all — that's why the client's Dockerfile is on `node:22-alpine` while the server's stays
+on `node:20-alpine`.
 
 ```bash
-git clone <your-repo-url>
-cd inventory-order-management
 cd server && npm install
 cd ../client && npm install --legacy-peer-deps
 ```
 
-> The client install needs `--legacy-peer-deps` to work around a known npm 11 Arborist crash
-> (`Cannot read properties of null (reading 'edgesOut')`) triggered by Angular 22's optional
-> Vitest peer dependencies — an npm bug, not a problem with this project's dependencies.
-
-## Configuration
+(The `--legacy-peer-deps` flag works around an npm 11 bug — Arborist crashes on Angular 22's
+optional Vitest peer deps. Not a problem with this project, just npm being npm.)
 
 ```bash
 cp server/.env.example server/.env
 ```
 
-The client has no `.env` — Angular bakes `VITE`-style config into the build at compile time via
-`src/environments/environment.ts` (see Docker section below for how the containerized build
-overrides the API URL).
-
-## Running locally
-
-Start MongoDB (Docker is simplest):
+Mongo via Docker:
 
 ```bash
 docker run -d -p 27019:27017 --name inventory-mongo mongo:7
 ```
 
-Then, in two terminals:
+Then:
 
 ```bash
 cd server && npm run dev     # http://localhost:4100
 cd client && npx ng serve    # http://localhost:4200
 ```
 
-## Docker
-
-Each service has its own Dockerfile (multi-stage: build, then a minimal runtime image — Node
-Alpine for the API, nginx Alpine serving the Angular production build for the client).
-
-```bash
-docker build -t inventory-server ./server
-docker build --build-arg API_URL=http://localhost:4100/api -t inventory-client ./client
-```
-
 ## Docker Compose
-
-Runs MongoDB, the API, and the frontend (served by nginx) together:
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-- Frontend: `http://localhost:8091`
-- API: `http://localhost:4100/api`
-- MongoDB: `localhost:27019`
+Frontend on `8091`, API on `4100`, Mongo on `27019` — shifted off the usual ports since I've got the
+other two portfolio projects' stacks running on the same machine sometimes.
 
-Ports default to 8091/4100/27019 to avoid clashing with the other two portfolio projects and any
-other local services; override via `.env` (`CLIENT_PORT`, `API_PORT`, `MONGO_PORT`).
+## Endpoints
 
-## API Documentation
+Auth: `/api/auth/register`, `/api/auth/login`.
 
-Key endpoints (all require `Authorization: Bearer <token>` except `/api/auth/*`):
+Everything else needs a bearer token: `/api/suppliers`, `/api/products` (supports
+`?lowStockOnly=true`), `PATCH /api/products/:id/stock` for manual adjustments,
+`/api/purchase-orders` plus `/order`, `/receive`, `/cancel` actions on a specific order.
 
-| Method | Path                                       | Description                                  |
-|--------|-----------------------------------------------|-------------------------------------------------|
-| POST   | `/api/auth/register`                          | Create a staff account, returns a JWT            |
-| POST   | `/api/auth/login`                             | Log in, returns a JWT                            |
-| GET/POST | `/api/suppliers`                            | List (search/paginate) / create suppliers        |
-| GET/POST | `/api/products`                             | List (filter, `lowStockOnly=true`) / create products |
-| PATCH  | `/api/products/:id/stock`                     | Manual stock adjustment (+/-), with a reason      |
-| GET/POST | `/api/purchase-orders`                      | List (filter) / create a DRAFT purchase order     |
-| POST   | `/api/purchase-orders/:id/order`               | DRAFT → ORDERED                                  |
-| POST   | `/api/purchase-orders/:id/receive`             | ORDERED → RECEIVED, atomically updates stock      |
-| POST   | `/api/purchase-orders/:id/cancel`              | Cancel a DRAFT/ORDERED order                      |
-
-## Testing
+## Tests
 
 ```bash
 cd server
-npm test              # unit + integration (spins up an in-memory MongoDB automatically)
+npm test
 npm run lint
 npm run typecheck
 
 cd ../client
-npx ng build           # fails the build on template/type errors across the whole app
+npx ng build   # typechecks the whole app, fails on template errors too
+npx ng lint
 ```
 
-> Angular 22 switched its default test runner to Vitest, which needs an extra browser-provider
-> package (`@vitest/browser-playwright` or similar) not set up in this project — frontend unit
-> tests are out of scope here, same as the MERN project's React frontend. `ng build`'s full-project
-> type checking is the frontend's correctness gate.
+No frontend unit tests here — Angular 22 switched its default runner to Vitest and I haven't set up
+the browser provider package it needs. `ng build`'s full-project type checking is doing the job for
+now.
 
 ## CI/CD
 
-`.gitlab-ci.yml` runs, on every push: typecheck + build (server and client in parallel), lint,
-unit+integration tests (with JUnit reports surfaced in the MR UI), then builds both Docker images.
-Pushing the images to a registry is a manual gate (`docker-push`), since it needs registry
-credentials as CI/CD variables that aren't available on GitLab.com's free shared runners by
-default.
+`.gitlab-ci.yml`: typecheck + build → lint → tests (JUnit reports) → Docker builds. Registry push is
+a manual step, same reason as the other two projects (no creds on the free runners).
 
-## Screenshots
+## Stuff I'd add if I kept going
 
-Verified end-to-end through the real UI (not just curl): register → create supplier → create
-product → create purchase order → mark as ordered → receive (stock updated) → low-stock filter,
-both via `ng serve` + `npm run dev` and via the full `docker compose up` stack (nginx-served
-Angular build talking to the containerized API).
-
-## Future Improvements
-
-- Multi-warehouse support (currently a single global stock quantity per product)
-- Supplier-side partial receiving (receiving fewer units than ordered, e.g. a short shipment)
-- Role-based access (e.g. only managers can approve purchase orders above a cost threshold)
-- CSV export of low-stock products for a reorder report
-- A `StockMovement` audit collection instead of a logged-only reason on manual adjustments
-
-## What I Learned
-
-- Structuring an Angular app around standalone, lazy-loaded components with `loadComponent()`
-  routes instead of NgModules — the modern (Angular 15+) default, and a deliberately different
-  implementation from the MERN project's React Router setup, not just "the same app in another
-  framework."
-- Writing an `HttpInterceptorFn` (Angular's newer functional interceptor API) to attach a JWT and
-  handle 401s globally, the Angular equivalent of the MERN project's Axios interceptor — the same
-  problem, different framework idiom (RxJS operators vs. Promise `.then`/`.catch`).
-- Using Angular's reactive `FormArray` to let a purchase-order form have a variable number of line
-  items (add/remove rows), each independently validated.
-- The same atomic-update pattern (conditional `findOneAndUpdate` matching the expected current
-  state) shows up a third time here, after the Java project's position updates and the MERN
-  project's invoice-generation — a strong signal it's a general technique, not a one-off trick.
-- Hit and worked around a real npm 11 bug (`Cannot read properties of null (reading 'edgesOut')`
-  in npm's Arborist dependency resolver) triggered by Angular 22's default Vitest peer
-  dependencies — `--legacy-peer-deps` was the practical fix; worth being able to explain the
-  difference between "my dependency graph is broken" and "the package manager's resolver crashed."
+- Multi-warehouse support (right now stock is a single global number per product)
+- Partial receiving (a shipment that's short a few units)
+- Role-based access — only managers can approve orders above some cost
+- A proper audit trail for manual stock adjustments instead of just a logged reason
