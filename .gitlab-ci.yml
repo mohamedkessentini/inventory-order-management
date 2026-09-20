@@ -1,0 +1,114 @@
+# GitLab CI/CD pipeline for inventory-order-management (MEAN)
+#
+# Stages: build -> test -> docker-build -> docker-push (manual).
+# docker-push is manual since it needs registry credentials not available on GitLab.com's
+# free shared runners by default - see README's CI/CD section.
+
+stages:
+  - build
+  - test
+  - docker-build
+  - docker-push
+
+.server_cache:
+  cache:
+    key: "$CI_COMMIT_REF_SLUG-server-npm"
+    paths:
+      - server/node_modules
+
+.client_cache:
+  cache:
+    key: "$CI_COMMIT_REF_SLUG-client-npm"
+    paths:
+      - client/node_modules
+
+server-build:
+  stage: build
+  image: node:20-alpine
+  extends: .server_cache
+  script:
+    - cd server
+    - npm ci
+    - npm run typecheck
+
+client-build:
+  stage: build
+  image: node:20-alpine
+  extends: .client_cache
+  script:
+    - cd client
+    - npm ci --legacy-peer-deps # works around an npm 11 Arborist crash on Angular 22's optional Vitest peer deps
+    - npx ng build
+  artifacts:
+    paths:
+      - client/dist
+    expire_in: 1 hour
+
+server-lint:
+  stage: test
+  image: node:20-alpine
+  extends: .server_cache
+  script:
+    - cd server
+    - npm ci
+    - npm run lint
+
+client-lint:
+  stage: test
+  image: node:20-alpine
+  extends: .client_cache
+  script:
+    - cd client
+    - npm ci --legacy-peer-deps
+    - npm run lint
+
+server-test:
+  stage: test
+  image: node:20-alpine
+  extends: .server_cache
+  script:
+    - cd server
+    - npm ci
+    - npm test
+  artifacts:
+    when: always
+    reports:
+      junit: server/junit.xml
+    expire_in: 1 week
+
+docker-build-server:
+  stage: docker-build
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/server:$CI_COMMIT_SHORT_SHA ./server
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+docker-build-client:
+  stage: docker-build
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE/client:$CI_COMMIT_SHORT_SHA ./client
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+docker-push:
+  stage: docker-push
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build -t $CI_REGISTRY_IMAGE/server:$CI_COMMIT_SHORT_SHA -t $CI_REGISTRY_IMAGE/server:latest ./server
+    - docker build -t $CI_REGISTRY_IMAGE/client:$CI_COMMIT_SHORT_SHA -t $CI_REGISTRY_IMAGE/client:latest ./client
+    - docker push $CI_REGISTRY_IMAGE/server:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE/server:latest
+    - docker push $CI_REGISTRY_IMAGE/client:$CI_COMMIT_SHORT_SHA
+    - docker push $CI_REGISTRY_IMAGE/client:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
