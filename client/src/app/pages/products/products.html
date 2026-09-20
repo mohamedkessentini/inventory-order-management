@@ -1,0 +1,88 @@
+<h1>Products</h1>
+
+<mat-card class="form-card">
+  <h2>New product</h2>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="inline-form">
+    <mat-form-field appearance="outline">
+      <mat-label>SKU</mat-label>
+      <input matInput formControlName="sku" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Supplier</mat-label>
+      <mat-select formControlName="supplierId">
+        @for (s of suppliers(); track s._id) {
+          <mat-option [value]="s._id">{{ s.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Unit cost</mat-label>
+      <input matInput type="number" step="0.01" formControlName="unitCost" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Reorder threshold</mat-label>
+      <input matInput type="number" formControlName="reorderThreshold" />
+    </mat-form-field>
+    <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">Add product</button>
+  </form>
+  @if (formError()) {
+    <p class="error">{{ formError() }}</p>
+  }
+</mat-card>
+
+<mat-checkbox [checked]="lowStockOnly()" (change)="toggleLowStock($event.checked)" class="low-stock-toggle">
+  Show low-stock only
+</mat-checkbox>
+
+@if (loading()) {
+  <p>Loading...</p>
+} @else if (products().length === 0) {
+  <p>No products yet.</p>
+} @else {
+  <table mat-table [dataSource]="products()" class="mat-elevation-z1 full-width">
+    <ng-container matColumnDef="sku">
+      <th mat-header-cell *matHeaderCellDef>SKU</th>
+      <td mat-cell *matCellDef="let p">{{ p.sku }}</td>
+    </ng-container>
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let p">{{ p.name }}</td>
+    </ng-container>
+    <ng-container matColumnDef="supplier">
+      <th mat-header-cell *matHeaderCellDef>Supplier</th>
+      <td mat-cell *matCellDef="let p">{{ supplierName(p.supplier) }}</td>
+    </ng-container>
+    <ng-container matColumnDef="unitCost">
+      <th mat-header-cell *matHeaderCellDef>Unit cost</th>
+      <td mat-cell *matCellDef="let p">{{ p.unitCost }}</td>
+    </ng-container>
+    <ng-container matColumnDef="quantityInStock">
+      <th mat-header-cell *matHeaderCellDef>In stock</th>
+      <td mat-cell *matCellDef="let p">{{ p.quantityInStock }}</td>
+    </ng-container>
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let p">
+        @if (p.quantityInStock <= p.reorderThreshold) {
+          <mat-chip color="warn" highlighted>Low stock</mat-chip>
+        } @else {
+          <mat-chip color="primary" highlighted>OK</mat-chip>
+        }
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  <mat-paginator
+    [length]="totalElements()"
+    [pageSize]="limit()"
+    [pageIndex]="page() - 1"
+    [pageSizeOptions]="[10, 20, 50]"
+    (page)="onPageChange($event)"
+  ></mat-paginator>
+}

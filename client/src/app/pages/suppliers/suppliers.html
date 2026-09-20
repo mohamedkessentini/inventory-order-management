@@ -1,0 +1,54 @@
+<h1>Suppliers</h1>
+
+<mat-card class="form-card">
+  <h2>New supplier</h2>
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="inline-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Contact email (optional)</mat-label>
+      <input matInput formControlName="contactEmail" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Phone (optional)</mat-label>
+      <input matInput formControlName="phone" />
+    </mat-form-field>
+    <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">Add supplier</button>
+  </form>
+  @if (formError()) {
+    <p class="error">{{ formError() }}</p>
+  }
+</mat-card>
+
+@if (loading()) {
+  <p>Loading...</p>
+} @else if (suppliers().length === 0) {
+  <p>No suppliers yet.</p>
+} @else {
+  <table mat-table [dataSource]="suppliers()" class="mat-elevation-z1 full-width">
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let s">{{ s.name }}</td>
+    </ng-container>
+    <ng-container matColumnDef="contactEmail">
+      <th mat-header-cell *matHeaderCellDef>Contact email</th>
+      <td mat-cell *matCellDef="let s">{{ s.contactEmail || '—' }}</td>
+    </ng-container>
+    <ng-container matColumnDef="phone">
+      <th mat-header-cell *matHeaderCellDef>Phone</th>
+      <td mat-cell *matCellDef="let s">{{ s.phone || '—' }}</td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  <mat-paginator
+    [length]="totalElements()"
+    [pageSize]="limit()"
+    [pageIndex]="page() - 1"
+    [pageSizeOptions]="[10, 20, 50]"
+    (page)="onPageChange($event)"
+  ></mat-paginator>
+}
